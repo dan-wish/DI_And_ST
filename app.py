@@ -1138,6 +1138,8 @@ def telemetry_simulator_worker():
         "fuel_remaining_kg": STARTING_FUEL_KG,
         "fuel_flow_rate_kgh": 95.0,
         "head_accel_g": 1.2,
+        "temperature": 25.0,
+        "ambient_temp_c": 25.0,
     }
     speed_kmh = 295
     track_phase = "S1: MAIN STRAIGHT (DRS)"
@@ -1518,7 +1520,7 @@ def telemetry_simulator_worker():
                 pit_recommended = True
                 pit_reason = f"ESTIMATED TYRE WEAR {tyre_wear_pct:.1f}% EXCEEDS CLIFF THRESHOLD — BOX FOR FRESH SLICKS!"
 
-        pace_delta = round((LAST_LAP_TIME_SEC - BEST_LAP_TIME_SEC) if (LAST_LAP_TIME_SEC and BEST_LAP_TIME_SEC) else 0.0, 3)
+        # Step 5: Update temperature data generator to Gaussian distribution\n        sim_state["temperature"] = round(random.gauss(25.0, 10.0), 1)\n        sim_state["ambient_temp_c"] = sim_state["temperature"]\n\n        pace_delta = round((LAST_LAP_TIME_SEC - BEST_LAP_TIME_SEC) if (LAST_LAP_TIME_SEC and BEST_LAP_TIME_SEC) else 0.0, 3)
 
         packet = {
             "car_id": CAR_ID,
