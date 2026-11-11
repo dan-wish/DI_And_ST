@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>F1 Pit Wall Telemetry &amp; Safety Interlocks — Database Schema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-6">
+    <div class="max-w-7xl mx-auto space-y-8">
+        <!-- Header -->
+        <header class="border-b border-slate-800 pb-5 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <span class="px-2.5 py-1 rounded bg-red-600/20 text-red-400 border border-red-500/40 text-xs font-mono font-bold uppercase">
+                    ISO/IEC 25010 &bull; Data Architecture &amp; Schema Specification
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight uppercase mt-2 text-white">
+                    F1 Pit Wall Telemetry &amp; Safety Interlocks <span class="text-red-500">Database Schema</span>
+                </h1>
+                <p class="text-sm text-slate-400 mt-1">
+                    In-Memory Relational &amp; Real-Time Telemetry State Store (SENSORS_DB, LATEST_TELEMETRY, INTERLOCKS, LATCHED_ALARMS)
+                </p>
+            </div>
+            <div class="flex gap-3 text-xs font-mono">
+                <a href="kpi_dashboard.html" class="px-3.5 py-2 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-700 hover:bg-emerald-900 transition">
+                    View 100-Test KPI Dashboard &rarr;
+                </a>
+                <a href="http://localhost:5000/dashboard" class="px-3.5 py-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+                    Live Pit Wall Dashboard &rarr;
+                </a>
+            </div>
+        </header>
+
+        <!-- Entity-Relationship Visual Topology -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-4">
+                1. Entity-Relationship Topology (ERD)
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 font-mono text-xs">
+                <div class="bg-slate-950 border-2 border-sky-600/80 rounded-xl p-4">
+                    <div class="text-sky-400 font-black uppercase mb-1">[TABLE] SENSORS_DB</div>
+                    <div class="text-slate-400 text-[11px] mb-2">PK: id (INTEGER)</div>
+                    <ul class="space-y-1 text-slate-300">
+                        <li>&bull; name (VARCHAR(64), UNIQUE)</li>
+                        <li>&bull; system (VARCHAR(64))</li>
+                        <li>&bull; location (VARCHAR(128))</li>
+                        <li>&bull; type (VARCHAR(64))</li>
+                        <li>&bull; frequency (VARCHAR(32))</li>
+                    </ul>
+                    <div class="mt-3 pt-2 border-t border-slate-800 text-sky-300 text-[11px]">
+                        1 : N &rarr; Feeds Telemetry Channels
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 border-2 border-emerald-600/80 rounded-xl p-4">
+                    <div class="text-emerald-400 font-black uppercase mb-1">[TABLE] LATEST_TELEMETRY</div>
+                    <div class="text-slate-400 text-[11px] mb-2">PK: (car_id, timestamp)</div>
+                    <ul class="space-y-1 text-slate-300">
+                        <li>&bull; lap, total_laps (INT)</li>
+                        <li>&bull; track_phase (VARCHAR(64))</li>
+                        <li>&bull; speed_kmh (INT), crashed (BOOL)</li>
+                        <li>&bull; tyre_surface_temp_c (FLOAT)</li>
+                        <li>&bull; tyre_pressure_psi (FLOAT)</li>
+                        <li>&bull; front_brake_temp_c (FLOAT)</li>
+                        <li>&bull; fuel_remaining_kg (FLOAT)</li>
+                        <li>&bull; fuel_flow_rate_kgh (FLOAT)</li>
+                        <li>&bull; head_accel_g (FLOAT)</li>
+                    </ul>
+                    <div class="mt-3 pt-2 border-t border-slate-800 text-emerald-300 text-[11px]">
+                        1 : 1 &rarr; Evaluated by INTERLOCKS
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 border-2 border-amber-500/80 rounded-xl p-4">
+                    <div class="text-amber-400 font-black uppercase mb-1">[TABLE] INTERLOCK_STATUS</div>
+                    <div class="text-slate-400 text-[11px] mb-2">FK: telemetry_timestamp</div>
+                    <ul class="space-y-1 text-slate-300">
+                        <li>&bull; tyre_status (ENUM)</li>
+                        <li>&bull; tyre_psi_warning (BOOLEAN)</li>
+                        <li>&bull; brake_status (ENUM)</li>
+                        <li>&bull; fuel_status (ENUM)</li>
+                        <li>&bull; head_status (ENUM)</li>
+                        <li>&bull; critical_trip (BOOLEAN)</li>
+                        <li>&bull; active_trips (JSON_ARRAY)</li>
+                    </ul>
+                    <div class="mt-3 pt-2 border-t border-slate-800 text-amber-300 text-[11px]">
+                        1 : N &rarr; Triggers LATCHED_ALARMS
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 border-2 border-red-600/80 rounded-xl p-4">
+                    <div class="text-red-400 font-black uppercase mb-1">[TABLE] LATCHED_ALARMS</div>
+                    <div class="text-slate-400 text-[11px] mb-2">PK: code (VARCHAR(48))</div>
+                    <ul class="space-y-1 text-slate-300">
+                        <li>&bull; metric (VARCHAR(48))</li>
+                        <li>&bull; value (FLOAT)</li>
+                        <li>&bull; threshold (FLOAT)</li>
+                        <li>&bull; message (VARCHAR(256))</li>
+                        <li>&bull; latched_at (FLOAT EPOCH)</li>
+                    </ul>
+                    <div class="mt-3 pt-2 border-t border-slate-800 text-red-300 text-[11px]">
+                        Persists until POST /interlocks/reset
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Detailed Table 1: SENSORS_DB -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-sky-400 mb-3">
+                2. Table Definition: SENSORS_DB (F1 Sensor Channel Registry)
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs font-mono">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400 bg-slate-950/60">
+                            <th class="p-3">Column</th>
+                            <th class="p-3">Data Type</th>
+                            <th class="p-3">Constraints</th>
+                            <th class="p-3">Default / Example</th>
+                            <th class="p-3">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                        <tr>
+                            <td class="p-3 font-bold text-white">id</td>
+                            <td class="p-3 text-sky-300">INTEGER</td>
+                            <td class="p-3 text-amber-300">PRIMARY KEY, AUTO_INCREMENT</td>
+                            <td class="p-3">1 .. 6</td>
+                            <td class="p-3 text-slate-300">Unique identifier for each registered telemetry sensor channel</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">name</td>
+                            <td class="p-3 text-sky-300">VARCHAR(64)</td>
+                            <td class="p-3 text-amber-300">NOT NULL, UTF-8</td>
+                            <td class="p-3">tyre_surface_temp_c</td>
+                            <td class="p-3 text-slate-300">Telemetry JSON key (supports UTF-8 / Cyrillic / Chinese identifiers)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">system</td>
+                            <td class="p-3 text-sky-300">VARCHAR(64)</td>
+                            <td class="p-3 text-amber-300">NOT NULL</td>
+                            <td class="p-3">1. Tyres</td>
+                            <td class="p-3 text-slate-300">Parent F1 subsystem (1. Tyres, 2. Brakes, 3. Fuel, 4. Driver Earpiece)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">location</td>
+                            <td class="p-3 text-sky-300">VARCHAR(128)</td>
+                            <td class="p-3 text-amber-300">NOT NULL</td>
+                            <td class="p-3">4-Corner Wheel Hub IR Array</td>
+                            <td class="p-3 text-slate-300">Physical mounting location on the F1 chassis</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">type</td>
+                            <td class="p-3 text-sky-300">VARCHAR(64)</td>
+                            <td class="p-3 text-amber-300">NOT NULL</td>
+                            <td class="p-3">Temperature (80.0–135.0 °C)</td>
+                            <td class="p-3 text-slate-300">Physical unit, nominal operating window, and interlock threshold</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">frequency</td>
+                            <td class="p-3 text-sky-300">VARCHAR(32)</td>
+                            <td class="p-3 text-amber-300">NOT NULL</td>
+                            <td class="p-3">2 Hz (0.5s)</td>
+                            <td class="p-3 text-slate-300">MQTT publishing rate on topic telemetry/car/1</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Detailed Table 2: LATEST_TELEMETRY & Security Validation Bounds -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 mb-3">
+                3. Table Definition: LATEST_TELEMETRY &amp; Security Validation Bounds (TELEMETRY_SCHEMA_BOUNDS)
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs font-mono">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400 bg-slate-950/60">
+                            <th class="p-3">Column</th>
+                            <th class="p-3">Type</th>
+                            <th class="p-3">Security Validation Bounds</th>
+                            <th class="p-3">Track Sim Range</th>
+                            <th class="p-3">Safety Interlock Rules</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                        <tr>
+                            <td class="p-3 font-bold text-white">car_id</td>
+                            <td class="p-3 text-emerald-300">VARCHAR(64)</td>
+                            <td class="p-3">Non-empty UTF-8 string (rejects bool/null/empty)</td>
+                            <td class="p-3">"F1-CAR-01"</td>
+                            <td class="p-3 text-slate-300">Chassis primary identifier</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">timestamp</td>
+                            <td class="p-3 text-emerald-300">DOUBLE / FLOAT</td>
+                            <td class="p-3">&gt; 0.0, finite, non-boolean</td>
+                            <td class="p-3">Unix Epoch (s)</td>
+                            <td class="p-3 text-amber-300">Age &gt; 3.0s triggers LINK LOST / STALE TELEMETRY</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">tyre_surface_temp_c</td>
+                            <td class="p-3 text-emerald-300">FLOAT</td>
+                            <td class="p-3">[0.0, 250.0] °C</td>
+                            <td class="p-3">80.0 – 135.0 °C (35°C post-crash)</td>
+                            <td class="p-3 text-red-400">&lt;80 Cold | 80–110 Optimal | 110.1–130 Blister | &gt;130 Puncture Hazard (LATCH)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">tyre_pressure_psi</td>
+                            <td class="p-3 text-emerald-300">FLOAT</td>
+                            <td class="p-3">[5.0, 40.0] psi</td>
+                            <td class="p-3">20.0 – 25.5 psi</td>
+                            <td class="p-3 text-amber-300">&gt; 24.5 psi triggers Over-Inflation Warning</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">front_brake_temp_c</td>
+                            <td class="p-3 text-emerald-300">FLOAT</td>
+                            <td class="p-3">[0.0, 1500.0] °C</td>
+                            <td class="p-3">300.0 – 1050.0 °C</td>
+                            <td class="p-3 text-red-400">&lt;350 Cold | 350–1000 Bite Window | &gt;1000 Thermal Fade Alert (LATCH)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">fuel_remaining_kg</td>
+                            <td class="p-3 text-emerald-300">FLOAT</td>
+                            <td class="p-3">[0.0, 110.0] kg</td>
+                            <td class="p-3">100.0 &rarr; 0.95 kg (0.95%)</td>
+                            <td class="p-3 text-sky-300">Monotonic downward curve to 0.9%–1.0% at Lap 15; freezes on crash</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">fuel_flow_rate_kgh</td>
+                            <td class="p-3 text-emerald-300">FLOAT</td>
+                            <td class="p-3">[0.0, 150.0] kg/h</td>
+                            <td class="p-3">0.0 – 100.0 kg/h</td>
+                            <td class="p-3 text-red-400">&gt; 100.0 kg/h FIA Flow Violation; 0.0 kg/h Inertia Cutoff on crash</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-white">head_accel_g</td>
+                            <td class="p-3 text-emerald-300">FLOAT</td>
+                            <td class="p-3">[0.0, 100.0] g</td>
+                            <td class="p-3">0.0 – 30.0 g (2–5g cornering)</td>
+                            <td class="p-3 text-red-400">&gt; 20.0 g Medical Concussion Interlock (LATCH + Fuel Cutoff + Cooling)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
