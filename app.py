@@ -460,6 +460,53 @@ telemetry_response_model = api.inherit(
 # ---------------------------------------------------------------------------
 # Auth Endpoints (/auth)
 # ---------------------------------------------------------------------------
+@auth_ns.route("/register")
+class AuthRegisterResource(Resource):
+    @auth_ns.doc("user_register")
+    @auth_ns.expect(user_create_model)
+    def post(self):
+        """Self-registration endpoint for Viewer or Operator roles"""
+        data = request.get_json(silent=True) or {}
+        username = str(data.get("username", "")).strip()
+        password = str(data.get("password", "")).strip()
+        role = str(data.get("role", "Viewer")).strip()
+
+        if not username or not password:
+            api.abort(400, "Username and password are required.")
+        if len(username) < 3 or len(username) > 30:
+            api.abort(400, "Username must be between 3 and 30 characters.")
+        if len(password) < 4:
+            api.abort(400, "Password must be at least 4 characters long.")
+        if role not in ("Viewer", "Operator"):
+            # Prevent privilege escalation via self-registration
+            role = "Viewer"
+
+        pwd_hash, salt = hash_password(password)
+        with db_lock:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+            if cur.fetchone():
+                conn.close()
+                api.abort(409, f"Username '{username}' is already registered. Please choose another or log in.")
+
+            cur.execute(
+                "INSERT INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)",
+                (username, pwd_hash, salt, role)
+            )
+            conn.commit()
+            user_id = cur.lastrowid
+            conn.close()
+
+        new_user = {"id": user_id, "username": username, "role": role}
+        session["user"] = new_user
+        logger.info("New user '%s' self-registered successfully with role '%s'", username, role)
+        return {
+            "status": "success",
+            "message": f"Account '{username}' created successfully as {role}!",
+            "user": new_user
+        }, 201
+
 @auth_ns.route("/login")
 class AuthLoginResource(Resource):
     @auth_ns.doc("user_login")
@@ -1616,6 +1663,9 @@ DASHBOARD_HTML = """
                 <button id="btn-login" onclick="openLoginModal()" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold transition">
                     Login
                 </button>
+                <button id="btn-register" onclick="openRegisterModal()" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-mono text-xs font-bold transition">
+                    Sign Up
+                </button>
                 <button id="btn-logout" onclick="logoutUser()" class="hidden px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs font-semibold transition">
                     Logout
                 </button>
@@ -1691,9 +1741,52 @@ DASHBOARD_HTML = """
                     <input id="login-password" type="password" required placeholder="••••••••"
                            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500" />
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeLoginModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">Cancel</button>
-                    <button type="submit" class="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase transition">Sign In</button>
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" onclick="openRegisterModal()" class="text-xs text-sky-400 hover:underline">Need an account? Sign Up</button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="closeLoginModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">Cancel</button>
+                        <button type="submit" class="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase transition">Sign In</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Register / Create Account Dialog -->
+    <div id="register-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl font-mono">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-black uppercase text-white flex items-center gap-2">
+                    <span class="h-3 w-1.5 bg-emerald-500 rounded-full"></span>
+                    Create Pit Wall Account
+                </h2>
+                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white">&times;</button>
+            </div>
+            <div id="register-error-msg" class="hidden mb-3 p-2.5 rounded-lg bg-red-950/80 border border-red-700 text-red-200 text-xs font-bold"></div>
+            <form id="register-form" onsubmit="submitRegister(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">USERNAME</label>
+                    <input id="register-username" type="text" required placeholder="e.g. race_engineer_dan" minlength="3" maxlength="30"
+                           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">PASSWORD</label>
+                    <input id="register-password" type="password" required placeholder="Minimum 4 characters" minlength="4"
+                           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">PERSONA / ROLE</label>
+                    <select id="register-role" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        <option value="Operator">Operator (Race Controls & Telemetry Injection)</option>
+                        <option value="Viewer">Viewer (Telemetry Observation Only)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" onclick="openLoginModal()" class="text-xs text-sky-400 hover:underline">Already have an account? Sign In</button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="closeRegisterModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">Cancel</button>
+                        <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase transition">Create</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -2294,12 +2387,15 @@ DASHBOARD_HTML = """
             }
 
             const btnLogin = document.getElementById('btn-login');
+            const btnRegister = document.getElementById('btn-register');
             const btnLogout = document.getElementById('btn-logout');
             if (currentUser && currentUser.username !== 'anonymous_viewer' && currentUser.username !== 'viewer') {
                 btnLogin.classList.add('hidden');
+                if (btnRegister) btnRegister.classList.add('hidden');
                 btnLogout.classList.remove('hidden');
             } else {
                 btnLogin.classList.remove('hidden');
+                if (btnRegister) btnRegister.classList.remove('hidden');
                 btnLogout.classList.add('hidden');
             }
 
@@ -2329,12 +2425,51 @@ DASHBOARD_HTML = """
         }
 
         function openLoginModal() {
+            closeRegisterModal();
             document.getElementById('login-modal').classList.remove('hidden');
             document.getElementById('login-error-msg').classList.add('hidden');
         }
 
         function closeLoginModal() {
             document.getElementById('login-modal').classList.add('hidden');
+        }
+
+        function openRegisterModal() {
+            closeLoginModal();
+            document.getElementById('register-modal').classList.remove('hidden');
+            document.getElementById('register-error-msg').classList.add('hidden');
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('register-modal').classList.add('hidden');
+        }
+
+        async function submitRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value.trim();
+            const password = document.getElementById('register-password').value.trim();
+            const role = document.getElementById('register-role').value;
+            const errEl = document.getElementById('register-error-msg');
+
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, role })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = data.user;
+                    closeRegisterModal();
+                    updateRbacUi();
+                } else {
+                    errEl.textContent = data.message || 'Error creating account.';
+                    errEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                errEl.textContent = 'Connection error during registration.';
+                errEl.classList.remove('hidden');
+            }
         }
 
         async function submitLogin(e) {
