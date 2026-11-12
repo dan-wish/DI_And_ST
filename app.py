@@ -2001,125 +2001,7 @@ DASHBOARD_HTML = """
             </div>
         </section>
 
-        <!-- Sensor CRUD Management Panel (Visible to Operator & Admin; Inaccessible to Viewer) -->
-        <section id="sensor-crud-panel" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl font-mono">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-slate-800 pb-3">
-                <div>
-                    <h2 class="text-sm font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                        Sensor Subsystems &amp; Calibration Registry (/sensors CRUD)
-                    </h2>
-                    <p class="text-xs text-slate-400">Viewed by all personas. Modifying sensors requires Operator or Admin permissions.</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="loadSensorsTable()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">&#8635; Refresh Sensors</button>
-                </div>
-            </div>
-
-            <!-- Add Sensor Form (Only enabled for Operator & Admin) -->
-            <form id="create-sensor-form" onsubmit="submitCreateSensor(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-2.5 mb-4 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
-                <div>
-                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">SENSOR NAME</label>
-                    <input id="sensor-name-input" type="text" required placeholder="e.g. ers_coolant_temp_c"
-                           class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div>
-                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">LOCATION</label>
-                    <input id="sensor-loc-input" type="text" required placeholder="e.g. Sidepod Radiator"
-                           class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div>
-                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">TYPE / UNIT</label>
-                    <input id="sensor-type-input" type="text" required placeholder="e.g. Temperature (°C)"
-                           class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div>
-                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">FREQUENCY</label>
-                    <input id="sensor-freq-input" type="text" required placeholder="e.g. 2 Hz (0.5s)"
-                           class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div class="flex items-end">
-                    <button id="btn-add-sensor" type="submit" class="w-full px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase transition">
-                        + Register Sensor
-                    </button>
-                </div>
-            </form>
-
-            <!-- Sensors Table -->
-            <div class="overflow-x-auto border border-slate-800 rounded-xl">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
-                        <tr>
-                            <th class="px-3 py-2">ID</th>
-                            <th class="px-3 py-2">Channel Name</th>
-                            <th class="px-3 py-2">Location</th>
-                            <th class="px-3 py-2">Type / Range</th>
-                            <th class="px-3 py-2">Frequency</th>
-                            <th id="th-sensor-action" class="px-3 py-2 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sensors-table-body" class="divide-y divide-slate-800/60 text-slate-200">
-                        <tr><td colspan="6" class="px-3 py-3 text-center text-slate-500">Loading sensor channels...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Interactive Pit Wall Scenario Control Deck -->
-        <section id="scenario-injector-panel" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                        Pit Wall Scenario Injector:
-                    </span>
-                    <span id="active-scenario-pill" class="px-2.5 py-0.5 rounded bg-slate-800 text-emerald-400 border border-slate-700 text-xs font-mono font-bold">
-                        NOMINAL_RACING
-                    </span>
-                </div>
-                <button onclick="resetScenario()"
-                        class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-mono font-semibold transition">
-                    &#8635; Clear Scenario
-                </button>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-xs font-mono font-bold">
-                <button onclick="triggerScenario('pit_stop')" class="px-2.5 py-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 transition text-left">
-                    &#9873; Call Into Pits (Box)
-                </button>
-                <button onclick="triggerScenario('tyre_overheat')" class="px-2.5 py-2 rounded-lg bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 transition text-left">
-                    &#9832; Tyre Overdrive (&gt;125&deg;C)
-                </button>
-                <button onclick="triggerScenario('brake_duct_blockage')" class="px-2.5 py-2 rounded-lg bg-orange-950 hover:bg-orange-900 text-orange-300 border border-orange-700 transition text-left">
-                    &#9888; Brake Debris (&gt;1000&deg;C)
-                </button>
-                <button onclick="triggerScenario('kerb_strike')" class="px-2.5 py-2 rounded-lg bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-700 transition text-left">
-                    &#9889; Kerb Strike (15g Spike)
-                </button>
-                <button onclick="triggerScenario('fuel_flow_spike')" class="px-2.5 py-2 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 transition text-left">
-                    &#9981; FIA Fuel Flow (&gt;100 kg/h)
-                </button>
-                <button onclick="triggerScenario('safety_car')" class="px-2.5 py-2 rounded-lg bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-700 transition text-left">
-                    &#128663; Safety Car (Glazing)
-                </button>
-                <button onclick="triggerScenario('brake_bias_migration')" class="px-2.5 py-2 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700 transition text-left">
-                    &#9878; Brake Bias Migration
-                </button>
-                <button onclick="triggerScenario('extreme_porpoising')" class="px-2.5 py-2 rounded-lg bg-fuchsia-950 hover:bg-fuchsia-900 text-fuchsia-300 border border-fuchsia-700 transition text-left">
-                    &#12336; High-G Porpoising (14g)
-                </button>
-                <button onclick="triggerScenario('fuel_conservation_lift_coast')" class="px-2.5 py-2 rounded-lg bg-teal-950 hover:bg-teal-900 text-teal-300 border border-teal-700 transition text-left">
-                    &#127793; Lift &amp; Coast Fuel Save
-                </button>
-                <button onclick="triggerScenario('ers_boost_overtake')" class="px-2.5 py-2 rounded-lg bg-lime-950 hover:bg-lime-900 text-lime-300 border border-lime-700 transition text-left">
-                    &#128640; ERS Boost Overtake
-                </button>
-                <button onclick="triggerScenario('crash')" class="px-2.5 py-2 rounded-lg bg-red-950 hover:bg-red-900 text-red-200 border border-red-700 transition text-left sm:col-span-3 md:col-span-5">
-                    &#128165; Simulate Crash (&gt;20g Impact &bull; Concussion Interlock &bull; Fuel Cutoff)
-                </button>
-            </div>
-        </section>
-
-        <!-- 4 Target Sensor System Cards -->
+        <!-- 4 Target Sensor System Cards (Front-and-Center Telemetry) -->
         <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
             <!-- 1. Tyres Card -->
@@ -2245,7 +2127,7 @@ DASHBOARD_HTML = """
             </div>
         </section>
 
-        <!-- Rolling Real-Time Line Chart (Last 20 Ticks) -->
+        <!-- Rolling Real-Time Line Chart (Live Telemetry Trace) -->
         <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
@@ -2268,6 +2150,130 @@ DASHBOARD_HTML = """
             <div class="h-80 w-full">
                 <canvas id="telemetryChart"></canvas>
             </div>
+        </section>
+
+        <!-- Interactive Pit Wall Scenario Control Deck -->
+        <section id="scenario-injector-panel" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                        Pit Wall Scenario Injector:
+                    </span>
+                    <span id="active-scenario-pill" class="px-2.5 py-0.5 rounded bg-slate-800 text-emerald-400 border border-slate-700 text-xs font-mono font-bold">
+                        NOMINAL_RACING
+                    </span>
+                </div>
+                <button onclick="resetScenario()"
+                        class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-mono font-semibold transition">
+                    &#8635; Clear Scenario
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-xs font-mono font-bold">
+                <button onclick="triggerScenario('pit_stop')" class="px-2.5 py-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 transition text-left">
+                    &#9873; Call Into Pits (Box)
+                </button>
+                <button onclick="triggerScenario('tyre_overheat')" class="px-2.5 py-2 rounded-lg bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 transition text-left">
+                    &#9832; Tyre Overdrive (&gt;125&deg;C)
+                </button>
+                <button onclick="triggerScenario('brake_duct_blockage')" class="px-2.5 py-2 rounded-lg bg-orange-950 hover:bg-orange-900 text-orange-300 border border-orange-700 transition text-left">
+                    &#9888; Brake Debris (&gt;1000&deg;C)
+                </button>
+                <button onclick="triggerScenario('kerb_strike')" class="px-2.5 py-2 rounded-lg bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-700 transition text-left">
+                    &#9889; Kerb Strike (15g Spike)
+                </button>
+                <button onclick="triggerScenario('fuel_flow_spike')" class="px-2.5 py-2 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 transition text-left">
+                    &#9981; FIA Fuel Flow (&gt;100 kg/h)
+                </button>
+                <button onclick="triggerScenario('safety_car')" class="px-2.5 py-2 rounded-lg bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-700 transition text-left">
+                    &#128663; Safety Car (Glazing)
+                </button>
+                <button onclick="triggerScenario('brake_bias_migration')" class="px-2.5 py-2 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700 transition text-left">
+                    &#9878; Brake Bias Migration
+                </button>
+                <button onclick="triggerScenario('extreme_porpoising')" class="px-2.5 py-2 rounded-lg bg-fuchsia-950 hover:bg-fuchsia-900 text-fuchsia-300 border border-fuchsia-700 transition text-left">
+                    &#12336; High-G Porpoising (14g)
+                </button>
+                <button onclick="triggerScenario('fuel_conservation_lift_coast')" class="px-2.5 py-2 rounded-lg bg-teal-950 hover:bg-teal-900 text-teal-300 border border-teal-700 transition text-left">
+                    &#127793; Lift &amp; Coast Fuel Save
+                </button>
+                <button onclick="triggerScenario('ers_boost_overtake')" class="px-2.5 py-2 rounded-lg bg-lime-950 hover:bg-lime-900 text-lime-300 border border-lime-700 transition text-left">
+                    &#128640; ERS Boost Overtake
+                </button>
+                <button onclick="triggerScenario('crash')" class="px-2.5 py-2 rounded-lg bg-red-950 hover:bg-red-900 text-red-200 border border-red-700 transition text-left sm:col-span-3 md:col-span-5">
+                    &#128165; Simulate Crash (&gt;20g Impact &bull; Concussion Interlock &bull; Fuel Cutoff)
+                </button>
+            </div>
+        </section>
+
+        <!-- Sensor CRUD Management Panel (Collapsible Registry for Pit Wall Engineers) -->
+        <section id="sensor-crud-panel" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl font-mono">
+            <details class="group" id="sensor-registry-details">
+                <summary class="flex flex-wrap items-center justify-between gap-3 cursor-pointer list-none select-none">
+                    <div>
+                        <h2 class="text-sm font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                            Sensor Subsystems &amp; Calibration Registry (/sensors CRUD)
+                            <span class="text-[10px] font-normal text-slate-400 group-open:hidden">(Click to Expand)</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Registry of configured telemetry sensor hardware channels and metadata calibration.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="loadSensorsTable(event)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">&#8635; Refresh Sensors</button>
+                        <span class="text-slate-400 text-xs group-open:rotate-180 transition-transform">&#9660;</span>
+                    </div>
+                </summary>
+
+                <div class="mt-4 pt-4 border-t border-slate-800">
+                    <!-- Add Sensor Form (Only enabled for Operator & Admin) -->
+                    <form id="create-sensor-form" onsubmit="submitCreateSensor(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-2.5 mb-4 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">SENSOR NAME</label>
+                            <input id="sensor-name-input" type="text" required placeholder="e.g. ers_coolant_temp_c"
+                                   class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">LOCATION</label>
+                            <input id="sensor-loc-input" type="text" required placeholder="e.g. Sidepod Radiator"
+                                   class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">TYPE / UNIT</label>
+                            <input id="sensor-type-input" type="text" required placeholder="e.g. Temperature (°C)"
+                                   class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">FREQUENCY</label>
+                            <input id="sensor-freq-input" type="text" required placeholder="e.g. 2 Hz (0.5s)"
+                                   class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                        </div>
+                        <div class="flex items-end">
+                            <button id="btn-add-sensor" type="submit" class="w-full px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase transition">
+                                + Register Sensor
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Sensors Table -->
+                    <div class="overflow-x-auto border border-slate-800 rounded-xl">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                                <tr>
+                                    <th class="px-3 py-2">ID</th>
+                                    <th class="px-3 py-2">Channel Name</th>
+                                    <th class="px-3 py-2">Location</th>
+                                    <th class="px-3 py-2">Type / Range</th>
+                                    <th class="px-3 py-2">Frequency</th>
+                                    <th id="th-sensor-action" class="px-3 py-2 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sensors-table-body" class="divide-y divide-slate-800/60 text-slate-200">
+                                <tr><td colspan="6" class="px-3 py-3 text-center text-slate-500">Loading sensor channels...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
         </section>
     </main>
 
@@ -2593,7 +2599,8 @@ DASHBOARD_HTML = """
         // -------------------------------------------------------------------
         // Sensor CRUD Functions (/sensors)
         // -------------------------------------------------------------------
-        async function loadSensorsTable() {
+        async function loadSensorsTable(e) {
+            if (e && e.stopPropagation) e.stopPropagation();
             const tbody = document.getElementById('sensors-table-body');
             const canEdit = currentUser && (currentUser.role === 'Operator' || currentUser.role === 'Admin');
 
