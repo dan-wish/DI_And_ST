@@ -1520,7 +1520,11 @@ def telemetry_simulator_worker():
                 pit_recommended = True
                 pit_reason = f"ESTIMATED TYRE WEAR {tyre_wear_pct:.1f}% EXCEEDS CLIFF THRESHOLD — BOX FOR FRESH SLICKS!"
 
-        # Step 5: Update temperature data generator to Gaussian distribution\n        sim_state["temperature"] = round(random.gauss(25.0, 10.0), 1)\n        sim_state["ambient_temp_c"] = sim_state["temperature"]\n\n        pace_delta = round((LAST_LAP_TIME_SEC - BEST_LAP_TIME_SEC) if (LAST_LAP_TIME_SEC and BEST_LAP_TIME_SEC) else 0.0, 3)
+        # Step 5: Update temperature data generator to Gaussian distribution
+        sim_state["temperature"] = round(random.gauss(25.0, 10.0), 1)
+        sim_state["ambient_temp_c"] = sim_state["temperature"]
+
+        pace_delta = round((LAST_LAP_TIME_SEC - BEST_LAP_TIME_SEC) if (LAST_LAP_TIME_SEC and BEST_LAP_TIME_SEC) else 0.0, 3)
 
         packet = {
             "car_id": CAR_ID,
