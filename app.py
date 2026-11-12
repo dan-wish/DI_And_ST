@@ -1636,19 +1636,36 @@ DASHBOARD_HTML = """
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-red-600 selection:text-white">
-    <!-- Top Header -->
-    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+    <!-- Top Header (Sticky Pit Wall Status Deck) -->
+    <header class="border-b border-slate-800 bg-slate-900/95 backdrop-blur-md sticky top-0 z-30 shadow-2xl">
+        <!-- Primary Top Bar -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <div class="h-9 w-2 bg-red-600 rounded-full"></div>
                 <div>
-                    <h1 class="text-lg sm:text-xl font-black tracking-wider uppercase text-white">
-                        F1 Pit Wall <span class="text-red-500">Safety &amp; Strategy</span>
+                    <h1 class="text-base sm:text-lg font-black tracking-wider uppercase text-white flex items-center gap-2">
+                        F1 Pit Wall <span class="text-red-500">Telemetry &amp; Strategy</span>
                     </h1>
-                    <p class="text-xs text-slate-400 font-mono">
+                    <p class="text-[11px] text-slate-400 font-mono">
                         ISO/IEC 25010 &bull; TOPIC: <span class="text-slate-200">{{ mqtt_topic }}</span> &bull;
-                        CAR: <span id="car-id-label" class="text-emerald-400 font-bold">{{ car_id }}</span>
+                        CHASSIS: <span id="car-id-label" class="text-emerald-400 font-bold">{{ car_id }}</span>
                     </p>
+                </div>
+            </div>
+
+            <!-- Global Live Car Location & Track Telemetry Capsule (Always in viewspace!) -->
+            <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 shadow-inner font-mono">
+                <span id="nav-lap-counter" class="px-2 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-500/40 text-xs font-black">
+                    LAP 1/15
+                </span>
+                <span id="nav-speed-pill" class="px-2 py-0.5 rounded bg-slate-800 text-sky-300 text-xs font-bold">
+                    --- KM/H
+                </span>
+                <div class="flex items-center gap-1.5 pl-1">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="nav-track-phase-label" class="text-xs font-bold text-emerald-300 uppercase tracking-wide truncate max-w-[220px] sm:max-w-[340px]" title="Current Car Location">
+                        S1: MAIN STRAIGHT (DRS)
+                    </span>
                 </div>
             </div>
 
@@ -1680,11 +1697,11 @@ DASHBOARD_HTML = """
                     </button>
                     <button onclick="restartRace()" title="Restart Grand Prix from Lap 1"
                             class="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-mono text-xs font-black uppercase transition flex items-center gap-1">
-                        <span>&#8634;</span> Restart Race
+                        <span>&#8634;</span> Restart
                     </button>
                     <button onclick="resetScenario()" title="Reset Active Scenario to Nominal"
                             class="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 font-mono text-xs font-bold uppercase transition">
-                        Reset Scenario
+                        Reset
                     </button>
                 </div>
 
@@ -1715,6 +1732,36 @@ DASHBOARD_HTML = """
                    class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-mono font-semibold transition">
                     Swagger &rarr;
                 </a>
+            </div>
+        </div>
+
+        <!-- Sticky Secondary Strip: Live Compact Telemetry Strip (Visible during scrolling) -->
+        <div class="border-t border-slate-800/80 bg-slate-950/90 px-4 sm:px-6 py-1.5 font-mono text-xs flex flex-wrap items-center justify-between gap-3 text-slate-300">
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-slate-500 uppercase font-bold text-[10px]">TRACK:</span>
+                    <span id="sticky-track-phase" class="text-white font-bold text-xs truncate max-w-[200px]">--</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-slate-500 uppercase font-bold text-[10px]">TYRE:</span>
+                    <span id="sticky-tyre" class="font-bold text-emerald-400">--.-&deg;C</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-slate-500 uppercase font-bold text-[10px]">BRAKE:</span>
+                    <span id="sticky-brake" class="font-bold text-emerald-400">---.-&deg;C</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-slate-500 uppercase font-bold text-[10px]">FUEL:</span>
+                    <span id="sticky-fuel" class="font-bold text-sky-400">--.- kg</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-slate-500 uppercase font-bold text-[10px]">G-LOAD:</span>
+                    <span id="sticky-head" class="font-bold text-purple-400">-.- g</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-slate-500 uppercase font-bold text-[10px]">SCENARIO:</span>
+                <span id="sticky-scenario" class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-400 font-bold text-[11px]">NOMINAL_RACING</span>
             </div>
         </div>
     </header>
@@ -3035,6 +3082,24 @@ DASHBOARD_HTML = """
                 document.getElementById('speed-pill').textContent = `${data.speed_kmh !== undefined ? data.speed_kmh : 0} KM/H`;
                 document.getElementById('track-phase-label').textContent = data.track_phase || 'ON TRACK';
                 document.getElementById('active-scenario-pill').textContent = data.active_scenario || 'NOMINAL_RACING';
+
+                // Update Sticky Top Capsule (always in viewspace!)
+                const trackLocation = data.track_phase || 'ON TRACK';
+                document.getElementById('nav-lap-counter').textContent = `LAP ${data.lap || 1}/${data.total_laps || 15}`;
+                document.getElementById('nav-speed-pill').textContent = `${data.speed_kmh !== undefined ? data.speed_kmh : 0} KM/H`;
+                document.getElementById('nav-track-phase-label').textContent = trackLocation;
+                document.getElementById('nav-track-phase-label').title = `Track Position: ${trackLocation}`;
+
+                // Update Sticky Telemetry Strip
+                document.getElementById('sticky-track-phase').textContent = trackLocation;
+                document.getElementById('sticky-tyre').textContent = `${(data.tyre_surface_temp_c || 0).toFixed(1)}°C`;
+                document.getElementById('sticky-tyre').className = data.tyre_surface_temp_c > 130 ? 'font-bold text-red-400 animate-pulse' : (data.tyre_surface_temp_c > 110 ? 'font-bold text-amber-400' : 'font-bold text-emerald-400');
+                document.getElementById('sticky-brake').textContent = `${(data.front_brake_temp_c || 0).toFixed(1)}°C`;
+                document.getElementById('sticky-brake').className = data.front_brake_temp_c > 1000 ? 'font-bold text-red-400 animate-pulse' : 'font-bold text-emerald-400';
+                document.getElementById('sticky-fuel').textContent = `${(data.fuel_remaining_kg || 0).toFixed(1)} kg`;
+                document.getElementById('sticky-head').textContent = `${(data.head_accel_g || 0).toFixed(1)} g`;
+                document.getElementById('sticky-head').className = data.head_accel_g > 20 ? 'font-bold text-red-400 animate-pulse' : 'font-bold text-purple-400';
+                document.getElementById('sticky-scenario').textContent = data.active_scenario || 'NOMINAL_RACING';
 
                 renderTyres(data.tyre_surface_temp_c, data.tyre_pressure_psi, data.estimated_tyre_wear_pct);
                 renderBrakes(data.front_brake_temp_c);
